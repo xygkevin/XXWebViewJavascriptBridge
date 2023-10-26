@@ -14,8 +14,7 @@
 		D31D1A362AEA54BF00FEAB49 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D31D1A352AEA54BF00FEAB49 /* main.m */; };
 		D31D1A3F2AEA557A00FEAB49 /* XXWebViewJavascriptBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = D31D1A3E2AEA557A00FEAB49 /* XXWebViewJavascriptBridge.m */; };
 		D31D1A422AEA55B900FEAB49 /* XXWebViewJavascriptBridgeBase.m in Sources */ = {isa = PBXBuildFile; fileRef = D31D1A412AEA55B900FEAB49 /* XXWebViewJavascriptBridgeBase.m */; };
-		D31D1A452AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = D31D1A442AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeHandler.m */; };
-		D31D1A482AEA561E00FEAB49 /* XXWebViewJavascriptCode.m in Sources */ = {isa = PBXBuildFile; fileRef = D31D1A472AEA561E00FEAB49 /* XXWebViewJavascriptCode.m */; };
+		D31D1A452AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeJS.m in Sources */ = {isa = PBXBuildFile; fileRef = D31D1A442AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeJS.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,10 +31,8 @@
 		D31D1A3E2AEA557A00FEAB49 /* XXWebViewJavascriptBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XXWebViewJavascriptBridge.m; sourceTree = "<group>"; };
 		D31D1A402AEA55B900FEAB49 /* XXWebViewJavascriptBridgeBase.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XXWebViewJavascriptBridgeBase.h; sourceTree = "<group>"; };
 		D31D1A412AEA55B900FEAB49 /* XXWebViewJavascriptBridgeBase.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XXWebViewJavascriptBridgeBase.m; sourceTree = "<group>"; };
-		D31D1A432AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeHandler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XXWebViewJavascriptBridgeHandler.h; sourceTree = "<group>"; };
-		D31D1A442AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeHandler.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XXWebViewJavascriptBridgeHandler.m; sourceTree = "<group>"; };
-		D31D1A462AEA561E00FEAB49 /* XXWebViewJavascriptCode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XXWebViewJavascriptCode.h; sourceTree = "<group>"; };
-		D31D1A472AEA561E00FEAB49 /* XXWebViewJavascriptCode.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XXWebViewJavascriptCode.m; sourceTree = "<group>"; };
+		D31D1A432AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeJS.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = XXWebViewJavascriptBridgeJS.h; sourceTree = "<group>"; };
+		D31D1A442AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeJS.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XXWebViewJavascriptBridgeJS.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,10 +85,8 @@
 				D31D1A3E2AEA557A00FEAB49 /* XXWebViewJavascriptBridge.m */,
 				D31D1A402AEA55B900FEAB49 /* XXWebViewJavascriptBridgeBase.h */,
 				D31D1A412AEA55B900FEAB49 /* XXWebViewJavascriptBridgeBase.m */,
-				D31D1A432AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeHandler.h */,
-				D31D1A442AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeHandler.m */,
-				D31D1A462AEA561E00FEAB49 /* XXWebViewJavascriptCode.h */,
-				D31D1A472AEA561E00FEAB49 /* XXWebViewJavascriptCode.m */,
+				D31D1A432AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeJS.h */,
+				D31D1A442AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeJS.m */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -167,9 +162,8 @@
 			files = (
 				D31D1A2B2AEA54BD00FEAB49 /* ViewController.m in Sources */,
 				D31D1A422AEA55B900FEAB49 /* XXWebViewJavascriptBridgeBase.m in Sources */,
-				D31D1A452AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeHandler.m in Sources */,
+				D31D1A452AEA55FC00FEAB49 /* XXWebViewJavascriptBridgeJS.m in Sources */,
 				D31D1A252AEA54BD00FEAB49 /* AppDelegate.m in Sources */,
-				D31D1A482AEA561E00FEAB49 /* XXWebViewJavascriptCode.m in Sources */,
 				D31D1A362AEA54BF00FEAB49 /* main.m in Sources */,
 				D31D1A3F2AEA557A00FEAB49 /* XXWebViewJavascriptBridge.m in Sources */,
 			);

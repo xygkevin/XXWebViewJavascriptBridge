@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
 
   s.name         = "XXWebViewJavascriptBridge"
-  s.version      = "0.0.3"
+  s.version      = "0.0.4"
   s.summary      = "Simple Design for Objective-C bridge with Javascript. Also can get js console.log."
   s.homepage     = "https://github.com/xygkevin/XXWebViewJavascriptBridge.git"
   s.license      = "MIT"

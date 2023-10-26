@@ -30,12 +30,7 @@
     self.webView = [[WKWebView alloc] initWithFrame:frame configuration:webViewConfiguration];
     self.bridge = [XXWebViewJavascriptBridge bridgeForWebView:self.webView] ;
     
-    
-    self.bridge.consolePipeBlock = ^(id  _Nonnull water) {
-        NSLog(@"Next line is javascript console.log------>>>>");
-        NSLog(@"%@",water);
-    };
-    
+
     [self.bridge registerHandler:@"DeviceLoadJavascriptSuccess" handler:^(id data, WVJBResponseCallback responseCallback) {
         NSDictionary *response = @{@"result": @"iOS"};
         responseCallback(response);

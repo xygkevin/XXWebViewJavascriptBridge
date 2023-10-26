@@ -6,18 +6,39 @@
 //
 
 #import "XXWebViewJavascriptBridgeBase.h"
+#import "XXWebViewJavascriptBridgeJS.h"
 
 @implementation XXWebViewJavascriptBridgeBase {
+    __weak id _webViewDelegate;
     long _uniqueId;
 }
 
-- (instancetype)init {
+static bool logging = false;
+static int logMaxLength = 500;
+
++ (void)enableLogging { logging = true; }
++ (void)setLogMaxLength:(int)length { logMaxLength = length;}
+
+- (id)init {
     if (self = [super init]) {
         self.messageHandlers = [NSMutableDictionary dictionary];
+        self.startupMessageQueue = [NSMutableArray array];
         self.responseCallbacks = [NSMutableDictionary dictionary];
         _uniqueId = 0;
     }
     return self;
+}
+
+- (void)dealloc {
+    self.startupMessageQueue = nil;
+    self.responseCallbacks = nil;
+    self.messageHandlers = nil;
+}
+
+- (void)reset {
+    self.startupMessageQueue = [NSMutableArray array];
+    self.responseCallbacks = [NSMutableDictionary dictionary];
+    _uniqueId = 0;
 }
 
 - (void)sendData:(id)data responseCallback:(WVJBResponseCallback)responseCallback handlerName:(NSString*)handlerName {
@@ -36,7 +57,7 @@
     if (handlerName) {
         message[@"handlerName"] = handlerName;
     }
-    [self dispatchMessage:message];
+    [self _queueMessage:message];
 }
 
 - (void)flushMessageQueue:(NSString *)messageQueueString{
@@ -44,54 +65,118 @@
         NSLog(@"WebViewJavascriptBridge: WARNING: ObjC got nil while fetching the message queue JSON from webview. This can happen if the WebViewJavascriptBridge JS is not currently present in the webview, e.g if the webview just loaded a new page.");
         return;
     }
-    WVJBMessage * message = [self deserializeMessageJSON: messageQueueString];
-    if (![message isKindOfClass:[WVJBMessage class]]) {
-        NSLog(@"WebViewJavascriptBridge: WARNING: Invalid %@ received: %@", [message class], message);
-    }
-    NSString* responseId = message[@"responseId"];
-    if (responseId) {
-        WVJBResponseCallback responseCallback = _responseCallbacks[responseId];
-        responseCallback(message[@"responseData"]);
-        [self.responseCallbacks removeObjectForKey:responseId];
-    } else {
-        WVJBResponseCallback responseCallback = NULL;
-        NSString* callbackId = message[@"callbackId"];
-        if (callbackId) {
-            responseCallback = ^(id responseData) {
-                if (responseData == nil) {
-                    responseData = [NSNull null];
-                }
-                WVJBMessage* msg = @{ @"responseId":callbackId, @"responseData":responseData };
-                [self dispatchMessage:msg];
-            };
-        } else {
-            responseCallback = ^(id ignoreResponseData) {
-                // Do nothing
-            };
+    
+    id messages = [self _deserializeMessageJSON:messageQueueString];
+    for (WVJBMessage* message in messages) {
+        if (![message isKindOfClass:[WVJBMessage class]]) {
+            NSLog(@"WebViewJavascriptBridge: WARNING: Invalid %@ received: %@", [message class], message);
+            continue;
         }
-        WVJBHandler handler = self.messageHandlers[message[@"handlerName"]];
+        [self _log:@"RCVD" json:message];
         
-        if (!handler) {
-            NSLog(@"WVJBNoHandlerException, No handler for message from JS: %@", message);
+        NSString* responseId = message[@"responseId"];
+        if (responseId) {
+            WVJBResponseCallback responseCallback = _responseCallbacks[responseId];
+            responseCallback(message[@"responseData"]);
+            [self.responseCallbacks removeObjectForKey:responseId];
+        } else {
+            WVJBResponseCallback responseCallback = NULL;
+            NSString* callbackId = message[@"callbackId"];
+            if (callbackId) {
+                responseCallback = ^(id responseData) {
+                    if (responseData == nil) {
+                        responseData = [NSNull null];
+                    }
+                    
+                    WVJBMessage* msg = @{ @"responseId":callbackId, @"responseData":responseData };
+                    [self _queueMessage:msg];
+                };
+            } else {
+                responseCallback = ^(id ignoreResponseData) {
+                    // Do nothing
+                };
+            }
+            
+            WVJBHandler handler = self.messageHandlers[message[@"handlerName"]];
+            
+            if (!handler) {
+                NSLog(@"WVJBNoHandlerException, No handler for message from JS: %@", message);
+                continue;
+            }
+            
+            handler(message[@"data"], responseCallback);
         }
-        handler(message[@"data"], responseCallback);
     }
 }
 
-- (NSString *)serializeMessage:(id)message pretty:(BOOL)pretty{
-    return [[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:message options:(NSJSONWritingOptions)(pretty ? NSJSONWritingPrettyPrinted : 0) error:nil] encoding:NSUTF8StringEncoding];
+- (void)injectJavascriptFile {
+    NSString *js = XXWebViewJavascriptBridgeJS();
+    [self _evaluateJavascript:js];
+    if (self.startupMessageQueue) {
+        NSArray* queue = self.startupMessageQueue;
+        self.startupMessageQueue = nil;
+        for (id queuedMessage in queue) {
+            [self _dispatchMessage:queuedMessage];
+        }
+    }
 }
 
-- (WVJBMessage *)deserializeMessageJSON:(NSString *)messageJSON {
-    return [NSJSONSerialization JSONObjectWithData:[messageJSON dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingAllowFragments error:nil];
+- (BOOL)isWebViewJavascriptBridgeURL:(NSURL*)url {
+    if (![self isSchemeMatch:url]) {
+        return NO;
+    }
+    return [self isBridgeLoadedURL:url] || [self isQueueMessageURL:url];
 }
 
-- (void)evaluateJavascript:(NSString *)javascriptCommand {
+- (BOOL)isSchemeMatch:(NSURL*)url {
+    NSString* scheme = url.scheme.lowercaseString;
+    return [scheme isEqualToString:kNewProtocolScheme] || [scheme isEqualToString:kOldProtocolScheme];
+}
+
+- (BOOL)isQueueMessageURL:(NSURL*)url {
+    NSString* host = url.host.lowercaseString;
+    return [self isSchemeMatch:url] && [host isEqualToString:kQueueHasMessage];
+}
+
+- (BOOL)isBridgeLoadedURL:(NSURL*)url {
+    NSString* host = url.host.lowercaseString;
+    return [self isSchemeMatch:url] && [host isEqualToString:kBridgeLoaded];
+}
+
+- (void)logUnkownMessage:(NSURL*)url {
+    NSLog(@"WebViewJavascriptBridge: WARNING: Received unknown WebViewJavascriptBridge command %@", [url absoluteString]);
+}
+
+- (NSString *)webViewJavascriptCheckCommand {
+    return @"typeof WebViewJavascriptBridge == \'object\';";
+}
+
+- (NSString *)webViewJavascriptFetchQueyCommand {
+    return @"WebViewJavascriptBridge._fetchQueue();";
+}
+
+- (void)disableJavscriptAlertBoxSafetyTimeout {
+    [self sendData:nil responseCallback:nil handlerName:@"_disableJavascriptAlertBoxSafetyTimeout"];
+}
+
+// Private
+// -------------------------------------------
+
+- (void) _evaluateJavascript:(NSString *)javascriptCommand {
     [self.delegate _evaluateJavascript:javascriptCommand];
 }
 
-- (void)dispatchMessage:(WVJBMessage *)message {
-    NSString *messageJSON = [self serializeMessage:message pretty:NO];
+- (void)_queueMessage:(WVJBMessage*)message {
+    if (self.startupMessageQueue) {
+        [self.startupMessageQueue addObject:message];
+    } else {
+        [self _dispatchMessage:message];
+    }
+}
+
+- (void)_dispatchMessage:(WVJBMessage*)message {
+    NSString *messageJSON = [self _serializeMessage:message pretty:NO];
+    [self _log:@"SEND" json:messageJSON];
     messageJSON = [messageJSON stringByReplacingOccurrencesOfString:@"\\" withString:@"\\\\"];
     messageJSON = [messageJSON stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""];
     messageJSON = [messageJSON stringByReplacingOccurrencesOfString:@"\'" withString:@"\\\'"];
@@ -101,15 +186,34 @@
     messageJSON = [messageJSON stringByReplacingOccurrencesOfString:@"\u2028" withString:@"\\u2028"];
     messageJSON = [messageJSON stringByReplacingOccurrencesOfString:@"\u2029" withString:@"\\u2029"];
     
-    NSString* javascriptCommand = [NSString stringWithFormat:@"WebViewJavascriptBridge.handleMessageFromNative('%@');", messageJSON];
+    NSString* javascriptCommand = [NSString stringWithFormat:@"WebViewJavascriptBridge._handleMessageFromObjC('%@');", messageJSON];
     if ([[NSThread currentThread] isMainThread]) {
-        [self evaluateJavascript:javascriptCommand];
+        [self _evaluateJavascript:javascriptCommand];
         
     } else {
         dispatch_sync(dispatch_get_main_queue(), ^{
-            [self evaluateJavascript:javascriptCommand];
+            [self _evaluateJavascript:javascriptCommand];
         });
     }
 }
 
+- (NSString *)_serializeMessage:(id)message pretty:(BOOL)pretty{
+    return [[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:message options:(NSJSONWritingOptions)(pretty ? NSJSONWritingPrettyPrinted : 0) error:nil] encoding:NSUTF8StringEncoding];
+}
+
+- (NSArray*)_deserializeMessageJSON:(NSString *)messageJSON {
+    return [NSJSONSerialization JSONObjectWithData:[messageJSON dataUsingEncoding:NSUTF8StringEncoding] options:NSJSONReadingAllowFragments error:nil];
+}
+
+- (void)_log:(NSString *)action json:(id)json {
+    if (!logging) { return; }
+    if (![json isKindOfClass:[NSString class]]) {
+        json = [self _serializeMessage:json pretty:YES];
+    }
+    if ([json length] > logMaxLength) {
+        NSLog(@"WVJB %@: %@ [...]", action, [json substringToIndex:logMaxLength]);
+    } else {
+        NSLog(@"WVJB %@: %@", action, json);
+    }
+}
 @end
