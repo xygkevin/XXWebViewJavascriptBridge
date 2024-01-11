@@ -9,8 +9,6 @@
 #import <WebKit/WebKit.h>
 #import "XXWebViewJavascriptBridgeBase.h"
 
-
-
 typedef void (^ConsolePipeBlock)(id water);
 
 @interface XXWebViewJavascriptBridge : NSObject <XXWebViewJavascriptBridgeBaseDelegate, WKNavigationDelegate>
